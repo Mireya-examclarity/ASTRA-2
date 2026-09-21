@@ -2,8 +2,6 @@
 
 A user-friendly website that helps users redesign and decorate their rooms based on their preferences and budget.
 
-Live Demo: https://astra-2-kwhanrtsrjckyd3gguwj6j.streamlit.app/
-
 What is ASTRA?
 
 ASTRA helps people make design decisions quicker, focusing on their OWN interest rather than just relying on generic suggestions.
@@ -40,7 +38,6 @@ This makes designs look balanced and aesthetically perfect, not just random.
 
  Built With
 - Python
-- Streamlit
+-GitHub and Flask
 - Maths (Fibonacci, Golden Ratio, Weighted Scoring)
 
-## How to Run
