@@ -2,8 +2,6 @@
 
 A user-friendly website that helps users redesign and decorate their rooms based on their preferences and budget.
 
-What is ASTRA?
-
 ASTRA helps people make design decisions quicker, focusing on their OWN interest rather than just relying on generic suggestions.
 
 Users enter:
@@ -14,8 +12,8 @@ Users enter:
 
 ASTRA then gives personalized recommendations!
 
- The Maths Behind ASTRA 🧮
-Its not a random suggestion app. ASTRA uses:
+ The Maths
+Its not a random suggestion app. It includes:
 
 1. Weighted Recommendation Algorithm:
 Each design option is scored against:
@@ -30,7 +28,7 @@ Used for beautiful, natural placement of decor, furniture and space elements - j
 
 This makes designs look balanced and aesthetically perfect, not just random.
 
- Why ASTRA?
+WHY I MADE ASTRA ???:
 - No more endless Pinterest scrolling(easy)
 - Decisions are quick but personalized
 - Based on maths, not just suggestions
