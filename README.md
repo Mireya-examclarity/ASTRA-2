@@ -5,15 +5,16 @@ A user-friendly website that helps users redesign and decorate their rooms based
 ASTRA helps people make design decisions quicker, focusing on their OWN interest rather than just relying on generic suggestions.
 
 Users enter:
-- Room size & spatial constraints
-- Aesthetic preferences
-- Budget
-- Functional requirements
+>Room size & spatial constraints
+>Aesthetic preferences  
+> Budget
+> Functional requirements
 
-ASTRA then gives personalized recommendations!
+ASTRA then gives personalized recommendations based off this.
 
  The Maths
-Its not a random suggestion app. It includes:
+  
+  It includes:
 
 1. Weighted Recommendation Algorithm:
 Each design option is scored against:
