@@ -1,42 +1,28 @@
- ASTRA - Smart Space Customization App
+ASTRA - Smart Space Customization App
+by [Advika]
 
-A user-friendly website that helps users redesign and decorate their rooms based on their preferences and budget.
+What is this?
 
-ASTRA helps people make design decisions quicker, focusing on their OWN interest rather than just relying on generic suggestions.
+I made ASTRA because of all the people who are  tired of scrolling Pinterest or any other websites for hours and still not knowing what to do with their small room. So this app helps you decide based on your room size, budget and what you like.
 
-Users enter:
->Room size & spatial constraints
->Aesthetic preferences  
-> Budget
-> Functional requirements
+How it works:
+You enter room size (Small, Medium, Large), your vibe (Minimalist, Cozy etc), budget (Low, Medium, High), and how important the  space or room is.
 
-ASTRA then gives personalized recommendations based off this.
+Then it gives you top 6 matches.
 
- The Maths
-  
-  It includes:
+The Maths behind it:
 
-1. Weighted Recommendation Algorithm:
-Each design option is scored against:
-- Spatial constraints
-- Aesthetic preferences  
-- Budget limits
-- Functional requirements
-Overall compatibility score = weighted sum of all factors. Top 10 best matches are shown.
+1. Weighted Score - I gave weights: Space 30%, Budget 25%, Style pref 35%, Golden bonus 10%. Its simple but works.
+2. 
+3. Golden Angle 137.5 degrees - I read that nature uses 137.5 deg for leaves and sunflowers, so I used it to make placement feel natural. I added a random bonus 0.85 to 1.0 to simulate that.
 
-2. Fibonacci Spirals & Golden Angle (137.5°):
-Used for beautiful, natural placement of decor, furniture and space elements - just like nature arranges leaves and galaxies!
+Why use ASTRA?
+- No more endless scrolling
+- Quick but personal
+- Respects budget
+- Based on simple maths
 
-This makes designs look balanced and aesthetically perfect, not just random.
+Tech used: Python, Flask, HTML, CSS, JS
 
-WHY I MADE ASTRA ???:
-- No more endless Pinterest scrolling(easy)
-- Decisions are quick but personalized
-- Based on maths, not just suggestions
-- Respects your budget and your taste
-
- Built With
-- Python
--GitHub and Flask
-- Maths (Fibonacci, Golden Ratio, Weighted Scoring)
-
+I built it myself, took 2 days. My room is small so I tested with my own room first. 
+ 
