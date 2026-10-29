@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASTRA - Room Decor Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root { --main: #6c4ab6; }
+body { background: #f6f3ff; font-family: Arial, sans-serif; margin: 0; padding: 15px; }
+h1 { color: var(--main); text-align: center; }
+
+.top-note { text-align: center; color: #888; font-size: 13px; }
+
+.main { display: flex; gap: 15px; max-width: 1000px; margin: 20px auto; flex-wrap: wrap; }
+
+.card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); flex: 1; min-width: 280px; }
+label { font-size: 13px; font-weight: bold; display: block; margin-top: 12px; color: #444; }
+select, input { box-sizing: border-box; width: 100%; padding: 10px; margin-top: 4px; border-radius: 8px; border: 1px solid #ddd; }
+select:focus, input:focus, button:focus, .result:focus { outline: 3px solid var(--main); outline-offset: 2px; }
+
+.upload { border: 2px dashed #b9a6e0; border-radius: 12px; padding: 25px; text-align: center; margin-top: 15px; cursor: pointer; background: #faf8ff; }
+
+.preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; margin-top: 10px; display: none; }
+.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+.btn-main { background: var(--main); color: white; }
+.btn-light { background: #eee7ff; color: var(--main); }
+
+.result { display: flex; gap: 12px; background: #fbf9ff; border: 1px solid #e9e2ff; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+
+.tag { display: inline-block; background: #eee7ff; color: var(--main); padding: 3px 8px; border-radius: 20px; font-size: 11px; margin: 3px 3px 0 0; }
+
+.bar { height: 6px; background: #eee; border-radius: 10px; margin-top: 6px; overflow: hidden; }
+
+.fill { height: 100%; background: var(--main); }
+
+.score { font-weight: bold; color: var(--main); font-size: 18px; }
+
+.hero { display: flex; gap: 15px; align-items: center; background: #f3efff; padding: 15px; border-radius: 12px; }
+
+.decor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+.decor { background: white; border: 1px solid #eee; border-radius: 10px; padding: 12px; text-align: center; }
+
+.wish-btn { position: fixed; bottom: 15px; right: 15px; background: var(--main); color: white; padding: 12px 20px; border-radius: 30px; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; }
+#photoNote { font-size: 12px; color: var(--main); margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<h1>ASTRA ✨</h1>
+<p class="top-note">Find simple decor ideas to make your room feel more like you.</p>
+
+<div class="main">
+<div style="flex:1; min-width:280px;">
+<div class="card">
+<h3>Your Room</h3>
+
+<label for="roomName">Give your room a name</label>
+<input id="roomName" placeholder="eg. My cozy corner" autocomplete="off">
+
+<label for="room">Room Size</label>
+<select id="room"><option>Small</option><option selected>Medium</option><option>Large</option></select>
+
+<label for="pref">What style do you like?</label>
+<select id="pref">
+<option selected>Surprise me</option><option>Minimalist</option><option>Cozy</option><option>Biophilic</option><option>Scandinavian</option><option>Color Pop</option><option>Modern Luxury</option><option>Zen</option><option>Study Focus</option><option>Space Saving</option><option>Pastel Dream</option>
+</select>
+
+<label for="favColor">Pick your favorite color</label>
+<input type="color" id="favColor" value="#6c4ab6" style="height:45px; padding:5px;" aria-label="Pick your favorite color">
+
+<label for="budget">Your Budget</label>
+<select id="budget"><option>Low</option><option selected>Medium</option><option>High</option></select>
+
+<label for="space">How important is free space?</label>
+<select id="space"><option>Not important</option><option selected>Somewhat important</option><option>Very important</option></select>
+
+<div class="upload" id="drop" tabindex="0" role="button" aria-label="Upload room photo to analyze">
+<div style="font-size:32px;">📸</div><b>Upload a picture of your room</b><br><span style="font-size:12px;color:#888;">Click to analyze light & colors</span>
+<input type="file" id="file" accept="image/*" hidden>
+<img id="prev" class="preview" alt="Room preview">
+<div id="photoNote"></div>
+</div>
+
+<button class="btn btn-main" onclick="analyzeRoom()">✨ FIND MY ROOM STYLE</button>
+<button class="btn btn-light" onclick="resetPrefs()">Reset my choices</button>
+<div style="margin-top:12px;"><canvas id="radar" height="200"></canvas></div>
+</div>
+</div>
+
+<div style="flex:1; min-width:280px;">
+<div class="card">
+<h3>🏆 Room Ideas For You</h3>
+<div id="results"><p style="text-align:center;padding:30px;color:#bbb;">Choose your preferences and click the button to get ideas.</p></div>
+</div>
+<div id="detail" style="display:none; margin-top:15px;"></div>
+</div>
+</div>
+
+<button class="wish-btn" id="wishBtn" onclick="clearWishlist()" aria-label="Wishlist, click to clear">🛍️ Wishlist: <b id="wishCount">0</b></button>
+
+<script>
+const designs = {
+    "Minimalist": { desc: "A clean and simple look.", colors: ["White", "Grey", "Sage"], icon: "✨", budgets: ["Low", "Medium"], room: "Small" },
+    "Cozy": { desc: "Warm colours and a comfortable feel.", colors: ["Beige", "Orange", "Cream"], icon: "🧸", budgets: ["Low", "Medium"], room: "Small" },
+    "Biophilic": { desc: "Bring a little nature indoors.", colors: ["Green", "Brown", "Cream"], icon: "🌿", budgets: ["Low", "Medium", "High"], room: "Any"},
+    "Scandinavian": { desc: "Bright spaces with light wood and simple furniture.", colors: ["White", "Light wood", "Sage"], icon: "❄️", budgets: ["Medium", "High"], room: "Medium" },
+    "Color Pop": { desc: "Add bright colours and fun details.", colors: ["Pink", "Yellow", "Blue"], icon: "🌈", budgets: ["Low", "Medium"], room: "Any" },
+    "Modern Luxury": { desc: "A stylish look with elegant details.", colors: ["Black", "Gold", "Ivory"], icon: "💎", budgets: ["High"], room: "Large" },
+    "Zen": { desc: "A calm space with natural colours.", colors: ["White", "Green", "Wood"], icon: "🧘", budgets: ["Low", "Medium"], room: "Small" },
+    "Study Focus": { desc: "A practical setup for studying.", colors: ["White", "Grey", "Blue"], icon: "📚", budgets: ["Low", "Medium"], room: "Small" },
+    "Space Saving": { desc: "Make better use of a small room.", colors: ["White", "Sage", "Grey"], icon: "📦", budgets: ["Low", "Medium"], room: "Small" },
+    "Pastel Dream": { desc: "Soft colours for a cute and relaxing room.", colors: ["Pink", "Lavender", "Blue"], icon: "🎀", budgets: ["Low", "Medium"], room: "Small"}};
+
+const decor = {
+    "Minimalist": [["🪴", "Plant", "₹399"], ["💡", "Lamp", "₹799"]],
+    "Cozy": [["🕯️", "Candle", "₹349"], ["🧸", "Cushion", "₹449"]],
+    "Biophilic": [["🌿", "Money Plant", "₹399"], ["🪴", "Succulent", "₹249"]],
+    "Scandinavian": [["🪵", "Wood Table", "₹1299"], ["💡", "Nordic Lamp", "₹899"]],
+    "Color Pop": [["🌸", "Pink Pillow", "₹399"], ["🖼️", "Art", "₹499"]],
+    "Modern Luxury": [["✨", "Gold Vase", "₹699"], ["🪞", "Mirror", "₹1299"]],
+    "Zen": [["🪴", "Bonsai", "₹899"], ["🕯️", "Candle", "₹399"]],
+    "Study Focus": [["💡", "Lamp", "₹899"], ["📚", "Shelf", "₹1299"]],
+    "Space Saving": [["🧺", "Storage Basket", "₹799"], ["🪝", "Wall Hook", "₹299"]],
+    "Pastel Dream": [["🌸", "Vase", "₹399"], ["🧸", "Plushie", "₹499"]]};
+
+let radarChart = null;
+let wishlist = JSON.parse(localStorage.getItem("astra_wish") || "[]");
+document.getElementById("wishCount").textContent = wishlist.length;
+let photoBonus = {};
+let photoAnalysisText = "";
+let currentDetailStyle = null;
+
+const drop = document.getElementById("drop");
+const file = document.getElementById("file");
+const preview = document.getElementById("prev");
+const photoNote = document.getElementById("photoNote");
+
+drop.addEventListener("click", (e) => { if(e.target !== file) file.click(); });
+drop.addEventListener("keydown", (e) => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); file.click(); }});
+drop.addEventListener("dragover", (e) => e.preventDefault());
+drop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const img = e.dataTransfer.files[0];
+    if(img && img.type.startsWith("image/")) showImage(img);});
+
+file.addEventListener("change", () => { if(file.files[0]) showImage(file.files[0]); });
+
+function showImage(image) {
+    photoBonus = {}; photoAnalysisText = ""; photoNote.style.display="none"; photoNote.textContent="";
+    const reader = new FileReader();
+    reader.onerror = () => {
+        photoNote.textContent = "⚠️ Could not read that file - try another photo";
+        photoNote.style.display="block"; preview.style.display="none"; };
+   
+    reader.onload = (e) => {
+        preview.onload = () => { try{ analyzePhoto(preview); }catch(err){ photoNote.textContent="⚠️ Photo could not be analyzed"; photoNote.style.display="block"; photoBonus={}; } };
+        preview.onerror = () => { photoNote.textContent="⚠️ This image looks corrupted"; photoNote.style.display="block"; preview.style.display="none"; photoBonus={}; };
+        preview.src = e.target.result;
+        preview.style.display="block"; };
+   
+    reader.readAsDataURL(image);}
+
+
+// Convert hex to HSL - proper color math
+
+function hexToHsl(hex){
+    let r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+    let max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h,s,l=(max+min)/2;
+    if(max===min){ h=s=0; }
+    else{
+        let d=max-min;
+        s=l>0.5 ? d/(2-max-min) : d/(max+min);
+        switch(max)
+           { case r: h=(g-b)/d + (g<b?6:0); break;
+            case g: h=(b-r)/d + 2; break;
+            case b: h=(r-g)/d + 4; break;}
+        
+        h/=6;}
+    
+    return { h:h*360, s:s*100, l:l*100 };}
+
+
+// Tighter hue ranges - blue is really blue
+
+function getColorBonus(styleName, hex){
+    try{
+        const {h,s,l}=hexToHsl(hex);
+        if(s<12) {
+            if(["Minimalist","Scandinavian"].includes(styleName)) return 10;
+            return 0;  }
+      
+        // Pink 320-355 + 0-10 = true pink/magenta
+
+        if((h>=320 && h<=360) || (h>=0 && h<=10))
+           { if(s>35 && l>30 && l<85){
+                if(["Pastel Dream","Color Pop"].includes(styleName)) return 14;
+                if(["Cozy"].includes(styleName)) return 8;}}
+            
+        
+        // Green 80-150 pure green, not yellowish
+
+        if(h>=80 && h<=150 && s>25 && l>15 && l<80){
+            if(["Biophilic","Zen"].includes(styleName)) return 14; }
+       
+        // Blue 210-250 pure blue - excludes cyan 180-210
+
+        if(h>=210 && h<=250 && s>30){
+            if(["Study Focus","Scandinavian"].includes(styleName)) return 12;
+            if(["Minimalist"].includes(styleName)) return 6; }
+       
+        // Cyan 180-210 separate
+
+        if(h>=180 && h<210 && s>30)
+           { if(["Scandinavian","Minimalist"].includes(styleName)) return 8;}
+        
+        // Warm yellow-orange 25-60
+
+        if(h>=25 && h<=60 && s>40)
+            {if(["Cozy","Color Pop"].includes(styleName)) return 12;}
+        
+        if(l<20 && s<20)
+            {if(["Modern Luxury"].includes(styleName)) return 10;}}
+        
+    catch(e){}
+    return 0;}
+
+
+// Better photo analysis - keep aspect ratio and ignore white walls
+
+function analyzePhoto(imgEl)
+   { const canvas=document.createElement("canvas");
+    const ctx=canvas.getContext("2d");
+    const size=100;
+    canvas.width=size; canvas.height=size;
+
+    // draw without stretching - cover crop keeping ratio
+
+    const iw=imgEl.naturalWidth, ih=imgEl.naturalHeight;
+    const scale=Math.max(size/iw, size/ih);
+    const w=iw*scale, h=ih*scale;
+    const x=(size-w)/2, y=(size-h)/2;
+    ctx.drawImage(imgEl, x, y, w, h);
+
+    const data=ctx.getImageData(0,0,size,size).data;
+    let r=0,g=0,b=0,cnt=0, brightSum=0;
+    let samples=[];
+    for(let i=0;i<data.length;i+=16)
+      {  const pr=data[i], pg=data[i+1], pb=data[i+2];
+        const bright=(pr+pg+pb)/3;
+
+        // skip almost white wall and almost black shadow - they skew average
+
+        if(bright>235 || bright<15) continue;
+        const hsl=hexToHsl(`#${pr.toString(16).padStart(2,'0')}${pg.toString(16).padStart(2,'0')}${pb.toString(16).padStart(2,'0')}`);
+
+        // skip very low saturation (white/grey walls) for color decision
+
+        if(hsl.s<10) continue;
+        r+=pr; g+=pg; b+=pb; brightSum+=bright; cnt++;
+        samples.push({h:hsl.h, s:hsl.s});}
+    
+    // fallback if everything was filtered
+
+    if(cnt===0)
+      {  photoAnalysisText="Photo is mostly plain walls - using neutral suggestions";
+        photoNote.textContent="📸 "+photoAnalysisText; photoNote.style.display="block";
+        photoBonus={}; return;}
+    
+    r=Math.round(r/cnt); g=Math.round(g/cnt); b=Math.round(b/cnt);
+    const avgBright=brightSum/cnt;
+    photoBonus={}; let notes=[];
+    if(avgBright<80){ photoBonus["Study Focus"]=15; notes.push("Room looks dark - suggesting lamps"); }
+    if(avgBright>175){ photoBonus["Scandinavian"]=10; photoBonus["Zen"]=8; notes.push("Room looks bright"); }
+    // check how many green samples
+    const greenCount=samples.filter(s=>s.h>=80 && s.h<=150 && s.s>25).length;
+    if(greenCount > cnt*0.2){ photoBonus["Biophilic"]=15; notes.push("Green tones detected"); }
+    photoAnalysisText=notes.join(". ") || "Photo analyzed - neutral tones";
+    photoNote.textContent="📸 "+photoAnalysisText; photoNote.style.display="block";}
+
+
+function getScore(name, room, budget, preference, spaceNeed, favColor)
+    { const style=designs[name]; let points=0;
+    if(style.room==="Any"||style.room===room) points+=30;
+    else if(room==="Medium"&&style.room==="Small") points+=20;
+    else points+=10;
+    points+= style.budgets.includes(budget)?25:10;
+    if(preference===name) points+=35;
+    else if(preference==="Surprise me") points+=25;
+    else points+=10;
+    if(spaceNeed==="Very important"&&style.room==="Small") points+=10;
+    else if(spaceNeed==="Not important") points+=10;
+    else points+=5;
+    points+= getColorBonus(name, favColor);
+    if(photoBonus[name]) points+= photoBonus[name];
+    return Math.min(points,100);}
+
+
+function analyzeRoom()
+    {const room=document.getElementById("room").value;
+    const preference=document.getElementById("pref").value;
+    const budget=document.getElementById("budget").value;
+    const spaceNeed=document.getElementById("space").value;
+    const roomNameVal=document.getElementById("roomName").value.trim();
+    const favColor=document.getElementById("favColor").value;
+    document.documentElement.style.setProperty("--main", favColor);
+
+    const all=Object.keys(designs).map(name=>({ name, score:getScore(name,room,budget,preference,spaceNeed,favColor), ...designs[name] }));
+    all.sort((a,b)=>b.score-a.score);
+    const top=all.slice(0,6);
+    const box=document.getElementById("results"); box.innerHTML="";
+    if(roomNameVal)
+       { const p=document.createElement("p"); p.style.fontSize="12px"; p.style.color=favColor;
+        const label=document.createElement("span"); label.textContent="Ideas for ";
+        const bold=document.createElement("b"); bold.textContent=roomNameVal;
+        const dot=document.createElement("span"); dot.style.display="inline-block"; dot.style.width="12px"; dot.style.height="12px"; dot.style.background=favColor; dot.style.borderRadius="50%"; dot.style.marginLeft="6px";
+        p.append(label,bold,dot); box.appendChild(p);}
+    
+    if(photoAnalysisText)
+       { const pn=document.createElement("p"); pn.style.fontSize="11px"; pn.style.color="#666"; pn.textContent="Photo tip: "+photoAnalysisText; box.appendChild(pn); }
+    
+    top.forEach((style,i)=>
+       { const row=document.createElement("div"); row.className="result"; row.tabIndex=0;
+        row.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showDetail(style.name,style.score); } });
+        const icon=document.createElement("div"); icon.style.fontSize="36px"; icon.textContent=style.icon;
+        const info=document.createElement("div"); info.style.flex="1";
+        const title=document.createElement("div"); title.style.fontWeight="bold"; title.textContent=`#${i+1} ${style.name}`;
+        const desc=document.createElement("div"); desc.style.fontSize="12px"; desc.style.color="#666"; desc.textContent=style.desc;
+        const colors=document.createElement("div");
+        style.colors.forEach(c=>{ const tag=document.createElement("span"); tag.className="tag"; tag.textContent=c; colors.appendChild(tag); });
+        const favTag=document.createElement("span"); favTag.className="tag"; favTag.textContent=favColor; favTag.style.background=favColor; favTag.style.color="white"; colors.appendChild(favTag);
+        const bar=document.createElement("div"); bar.className="bar"; const fill=document.createElement("div"); fill.className="fill"; fill.style.width=style.score+"%"; fill.style.background=favColor; bar.appendChild(fill);
+        const scoreEl=document.createElement("div"); scoreEl.className="score"; scoreEl.textContent=style.score+"%"; scoreEl.style.color=favColor;
+        info.append(title,desc,colors,bar); row.append(icon,info,scoreEl); row.onclick=()=>showDetail(style.name,style.score); box.appendChild(row);  });
+  
+    const chartScores=[
+        getScore("Space Saving",room,budget,preference,spaceNeed,favColor),
+        getScore("Minimalist",room,budget,preference,spaceNeed,favColor),
+        getScore("Study Focus",room,budget,preference,spaceNeed,favColor),
+        getScore("Cozy",room,budget,preference,spaceNeed,favColor),
+        getScore("Biophilic",room,budget,preference,spaceNeed,favColor)];
+    
+    const ctx=document.getElementById("radar").getContext("2d");
+    if(radarChart) radarChart.destroy();
+    radarChart=new Chart(ctx,{ type:"radar", data:{ labels:["Space Saving","Minimalist","Study","Comfort","Nature"], datasets:[{ label:"Style Match", data:chartScores, backgroundColor:favColor+"33", borderColor:favColor, pointBackgroundColor:favColor }]}, options:{ scales:{ r:{ min:0,max:100,ticks:{ stepSize:20 } } } } });}
+
+
+function showDetail(name, score)
+    {currentDetailStyle=name;
+    const items=decor[name]||[]; const room=document.getElementById("room").value; const detail=document.getElementById("detail"); detail.style.display="block";
+    const card=document.createElement("div"); card.className="card"; const hero=document.createElement("div"); hero.className="hero";
+    const icon=document.createElement("div"); icon.style.fontSize="48px"; icon.textContent=designs[name].icon;
+    const head=document.createElement("div"); const h2=document.createElement("h2"); h2.style.margin="0"; h2.textContent=`${name} - ${score}% match`; const p=document.createElement("p"); p.style.fontSize="13px"; p.style.color="#666"; p.textContent=`A few ideas for your ${room.toLowerCase()} room.`; head.append(h2,p); hero.append(icon,head);
+    const sub=document.createElement("h3"); sub.textContent="Decor ideas"; const grid=document.createElement("div"); grid.className="decor-grid"; grid.id="decorGrid";
+    
+    items.forEach(it=>
+        {const d=document.createElement("div"); d.className="decor";
+        const e=document.createElement("div"); e.style.fontSize="32px"; e.textContent=it[0];
+        const b=document.createElement("b"); b.style.fontSize="13px"; b.textContent=it[1];
+        const pr=document.createElement("p"); pr.style.fontSize="11px"; pr.textContent=it[2];
+        const btn=document.createElement("button"); btn.className="btn"; btn.dataset.item=it[1]; btn.style.background="#eee7ff"; btn.style.color="var(--main)"; btn.textContent=wishlist.includes(it[1])?"✓ In wishlist":"Add to wishlist"; btn.onclick=()=>addWish(it[1],btn);
+        d.append(e,b,pr,btn); grid.appendChild(d);});
+    
+    card.append(hero,sub,grid); detail.replaceChildren(card); detail.scrollIntoView({ behavior:"smooth" });}
+
+function addWish(name, btn)
+    {if(wishlist.includes(name)){ alert(name + " is already in wishlist!"); return; }
+    wishlist.push(name); localStorage.setItem("astra_wish", JSON.stringify(wishlist));
+    document.getElementById("wishCount").textContent=wishlist.length; if(btn) btn.textContent="✓ In wishlist";}
+
+function refreshDetailButtons()
+   { const grid=document.getElementById("decorGrid");
+    if(!grid) return;
+    grid.querySelectorAll("button[data-item]").forEach(btn=>
+       { const itemName=btn.dataset.item;
+        btn.textContent=wishlist.includes(itemName)?"✓ In wishlist":"Add to wishlist";  });}
+
+
+function resetPrefs()
+    { document.getElementById("room").value="Medium";
+    document.getElementById("pref").value="Surprise me";
+    document.getElementById("budget").value="Medium";
+    document.getElementById("space").value="Somewhat important";
+    document.getElementById("roomName").value="";
+    document.getElementById("favColor").value="#6c4ab6";
+    document.documentElement.style.setProperty("--main", "#6c4ab6");
+    file.value=""; preview.removeAttribute("src"); preview.style.display="none"; preview.onload=null; preview.onerror=null;
+    photoNote.style.display="none"; photoNote.textContent=""; photoBonus={}; photoAnalysisText=""; currentDetailStyle=null;
+    document.getElementById("results").innerHTML=`<p style="text-align:center;padding:30px;color:#bbb;">Choose your preferences and click the button to get ideas.</p>`;
+    document.getElementById("detail").style.display="none";
+    if(radarChart){ radarChart.destroy(); radarChart=null; }
+    const ctx=document.getElementById("radar").getContext("2d"); ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}
+
+function clearWishlist()
+    { if(confirm("Clear wishlist?"))
+       { wishlist=[]; localStorage.removeItem("astra_wish");
+        document.getElementById("wishCount").textContent="0";
+        refreshDetailButtons(); }}
+   
+
+</script>
+</body>
+</html>
